@@ -1,0 +1,7 @@
+{
+  "name": "telegram-time-bot",
+  "version": "1.0.0",
+  "dependencies": {
+    "grammy": "^1.19.2"
+  }
+}
