@@ -88,7 +88,7 @@ bot.on("message", async (ctx) => {
     const endStr = formatGoogleDate(endDateObj);
 
     // Ссылка
-    const eventTitle = encodeURIComponent("Встреча"); // Название события
+    const eventTitle = encodeURIComponent("qw meet"); // Название события
     const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${eventTitle}&dates=${startStr}/${endStr}`;
 
     // Добавляем ссылку к тексту
