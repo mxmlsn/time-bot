@@ -1,7 +1,6 @@
 const { Bot, webhookCallback } = require("grammy");
 
 // Инициализация бота
-// Токен будет браться из переменных среды Vercel
 const bot = new Bot(process.env.BOT_TOKEN);
 
 // Названия городов и их часовые пояса (IANA)
@@ -12,43 +11,43 @@ const CITIES = {
     'б': { name: 'Буэнос-Айрес', zone: 'America/Argentina/Buenos_Aires', sort: 3 }
 };
 
-// Регулярное выражение для поиска времени и города
-// Ищет: число (часы), опционально :минуты, опционально пробел, буква города
+// Регулярное выражение для поиска времени
 const regex = /(\d{1,2})(?:[:\.](\d{2}))?\s*([мМпПеЕбБ])/i;
 
 bot.on("message", async (ctx) => {
     const text = ctx.message.text;
-    // Проверяем, есть ли в сообщении нужный паттерн
     const match = text.match(regex);
 
     if (!match) return;
 
-    // Разбираем то, что нашли
     let hours = parseInt(match[1]);
     let minutes = match[2] ? parseInt(match[2]) : 0;
-    const cityCode = match[3].toLowerCase(); // приводим к нижнему регистру
+    const cityCode = match[3].toLowerCase();
 
-    // Валидация времени
     if (hours > 23 || minutes > 59) return;
 
-    // Определяем исходный город
     const sourceCity = CITIES[cityCode];
     if (!sourceCity) return;
 
-    // Создаем объект даты с учетом часового пояса ИСХОДНОГО города
-    // Мы берем текущую дату и подставляем введенное время
-    const now = new Date();
-    // Формируем строку времени в ISO формате для правильного парсинга, но это сложно из-за поясов.
-    // Проще использовать toLocaleString для конвертации.
+    // --- Блок вычисления времени ---
     
-    // 1. Создаем дату, предполагая что это UTC, чтобы потом сдвинуть
-    let date = new Date();
-    date.setUTCHours(hours, minutes, 0, 0);
+    // Получаем текущее время в строке ISO для исходного города
+    const nowISO = new Date().toLocaleString("en-US", { timeZone: sourceCity.zone, hour12: false });
+    const cityDateCurrent = new Date(nowISO); 
+    
+    // Создаем дату "цели" (введенное время) для исходного города
+    const targetDate = new Date(nowISO);
+    targetDate.setHours(hours, minutes, 0, 0);
+    
+    // Если введенное время уже прошло сегодня (например, сейчас 18:00, а ввели 10:00),
+    // то, возможно, стоит оставить на сегодня (прошедшее) или перенести на завтра.
+    // Обычно в таких ботах оставляют ближайшее время. Оставим "сегодня", даже если прошло.
 
-    // Нам нужно найти момент времени (Timestamp), который соответствует введенным часам в этом городе.
-    // Это немного хитро, так как JS работает в локальном времени сервера.
-    // Используем Intl.DateTimeFormat для получения смещения.
-    
+    // Вычисляем абсолютное время (timestamp)
+    const diff = targetDate.getTime() - cityDateCurrent.getTime();
+    const absoluteTargetTime = new Date().getTime() + diff; // Это точное время события в UTC ms
+
+    // Функция форматирования времени для вывода
     const getTimeInCity = (timestamp, timeZone) => {
         return new Date(timestamp).toLocaleTimeString("ru-RU", {
             timeZone: timeZone,
@@ -57,49 +56,48 @@ bot.on("message", async (ctx) => {
         });
     };
 
-    // Чтобы найти абсолютное время, нам нужно "подогнать" timestamp.
-    // Самый простой способ без тяжелых библиотек:
-    // Берем текущее время, переводим в строку в нужном поясе, сравниваем разницу часов и корректируем.
-    
-    // Но есть способ надежнее: библиотека Luxon (но мы не хотим усложнять package.json), 
-    // поэтому сделаем через нативный Date и перебор.
-    
-    // Алгоритм:
-    // 1. Берем текущее время UTC.
-    // 2. Получаем часы/минуты в целевом городе.
-    // 3. Вычисляем разницу между "сейчас" в городе и "введенным временем".
-    // 4. Корректируем текущий timestamp на эту разницу.
-    
-    const nowISO = new Date().toLocaleString("en-US", { timeZone: sourceCity.zone, hour12: false });
-    const cityDateCurrent = new Date(nowISO); 
-    const targetDate = new Date(nowISO);
-    targetDate.setHours(hours, minutes, 0, 0);
-    
-    // Разница в миллисекундах, которую нужно прибавить к "сейчас"
-    const diff = targetDate.getTime() - cityDateCurrent.getTime();
-    const absoluteTargetTime = new Date().getTime() + diff;
-
-    // Формируем ответ
+    // --- Формирование текста ответа ---
     let resultLines = [];
 
     for (let code in CITIES) {
         const city = CITIES[code];
         const timeString = getTimeInCity(absoluteTargetTime, city.zone);
         
-        // Формат: `HH:MM` - Название
         resultLines.push({
             sort: city.sort,
             text: `\`${timeString}\` — ${city.name}`
         });
     }
 
-    // Сортируем (Москва внизу)
     resultLines.sort((a, b) => a.sort - b.sort);
+    let replyText = resultLines.map(line => line.text).join('\n');
 
-    // Собираем итоговое сообщение (только 4 строки)
-    const replyText = resultLines.map(line => line.text).join('\n');
+    // --- Блок создания ссылки на Google Calendar ---
+    
+    // Нам нужна дата в формате YYYYMMDDTHHMMSSZ (UTC)
+    // toISOString() дает формат 2023-10-05T14:48:00.000Z
+    // Нам нужно убрать лишние символы
+    const startDateObj = new Date(absoluteTargetTime);
+    const endDateObj = new Date(absoluteTargetTime + 60 * 60 * 1000); // Встреча на 1 час
 
-    await ctx.reply(replyText, { parse_mode: "Markdown" });
+    const formatGoogleDate = (date) => {
+        return date.toISOString().replace(/-|:|\.\d\d\d/g, "");
+    };
+
+    const startStr = formatGoogleDate(startDateObj);
+    const endStr = formatGoogleDate(endDateObj);
+
+    // Ссылка
+    const eventTitle = encodeURIComponent("Встреча"); // Название события
+    const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${eventTitle}&dates=${startStr}/${endStr}`;
+
+    // Добавляем ссылку к тексту
+    replyText += `\n\n[+ в календарь](${googleUrl})`;
+
+    await ctx.reply(replyText, { 
+        parse_mode: "Markdown", 
+        disable_web_page_preview: true // Чтобы не было картинки-превью ссылки
+    });
 });
 
 module.exports = webhookCallback(bot, "http");
