@@ -117,7 +117,7 @@ bot.on("message", async (ctx) => {
     const eventTitle = encodeURIComponent("qw meet");
     const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${eventTitle}&dates=${startStr}/${endStr}`;
 
-    replyText += `\n\n[+ в календарь](${googleUrl})`;
+    replyText += `\n\n[⨁ в календарь](${googleUrl})`;
 
     try {
         await ctx.reply(replyText, { 
