@@ -1,7 +1,8 @@
 const { Bot, webhookCallback } = require("grammy");
-const { kv } = require("@vercel/kv");
+const Redis = require("ioredis");
 
 const bot = new Bot(process.env.BOT_TOKEN);
+const redis = new Redis(process.env.REDIS_URL);
 
 // DEFAULT CITIES (used when chat has no custom settings)
 const DEFAULT_CITIES = [
@@ -15,26 +16,29 @@ const DEFAULT_CITIES = [
 // HELPER FUNCTIONS
 // ============================================
 
-// Get chat cities from KV or return defaults
+// Get chat cities from Redis or return defaults
 async function getChatCities(chatId) {
     try {
-        const stored = await kv.get(`chat:${chatId}:cities`);
-        if (stored && Array.isArray(stored) && stored.length > 0) {
-            return stored;
+        const stored = await redis.get(`chat:${chatId}:cities`);
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
         }
     } catch (e) {
-        console.error('KV get error:', e);
+        console.error('Redis get error:', e);
     }
     return DEFAULT_CITIES;
 }
 
-// Save chat cities to KV
+// Save chat cities to Redis
 async function saveChatCities(chatId, cities) {
     try {
-        await kv.set(`chat:${chatId}:cities`, cities);
+        await redis.set(`chat:${chatId}:cities`, JSON.stringify(cities));
         return true;
     } catch (e) {
-        console.error('KV set error:', e);
+        console.error('Redis set error:', e);
         return false;
     }
 }
@@ -251,13 +255,17 @@ bot.command("addcity", async (ctx) => {
     
     choiceText += `Ответь цифрой (1-${results.length}) чтобы выбрать`;
     
-    // Store pending choice in KV
-    await kv.set(`pending:${chatId}:${ctx.from.id}`, {
-        type: 'addcity',
-        cityName: cityName,
-        codes: codes,
-        results: results
-    }, { ex: 300 }); // expire in 5 minutes
+    // Store pending choice in Redis (expire in 5 minutes)
+    await redis.setex(
+        `pending:${chatId}:${ctx.from.id}`,
+        300,
+        JSON.stringify({
+            type: 'addcity',
+            cityName: cityName,
+            codes: codes,
+            results: results
+        })
+    );
     
     await ctx.reply(choiceText);
 });
@@ -320,7 +328,8 @@ bot.on("message", async (ctx) => {
     // Check for pending choice (number reply)
     if (/^\d+$/.test(text.trim())) {
         try {
-            const pending = await kv.get(`pending:${chatId}:${ctx.from.id}`);
+            const pendingStr = await redis.get(`pending:${chatId}:${ctx.from.id}`);
+            const pending = pendingStr ? JSON.parse(pendingStr) : null;
             
             if (pending && pending.type === 'addcity') {
                 const choice = parseInt(text.trim()) - 1;
@@ -340,7 +349,7 @@ bot.on("message", async (ctx) => {
                     currentCities.push(newCity);
                     await saveChatCities(chatId, currentCities);
                     
-                    await kv.del(`pending:${chatId}:${ctx.from.id}`);
+                    await redis.del(`pending:${chatId}:${ctx.from.id}`);
                     
                     await ctx.reply(
                         `✅ **Добавлен город:**\n\n` +
