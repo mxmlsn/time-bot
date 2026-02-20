@@ -20,9 +20,10 @@ try {
 
 // DEFAULT CITIES (used when chat has no custom settings)
 const DEFAULT_CITIES = [
-    { name: 'Москва', zone: 'Europe/Moscow', codes: ['м', 'm', 'msk', 'мск'], sort: 1 },
-    { name: 'Бангкок', zone: 'Asia/Bangkok', codes: ['б', 'b', 'bkk', 'бкк'], sort: 2 },
-    { name: 'Ереван', zone: 'Asia/Yerevan', codes: ['е', 'e', 'evn', 'ерв'], sort: 3 }
+    { name: 'Стамбул', zone: 'Europe/Istanbul', codes: ['с', 'ist', 'стамбик'], sort: 1 },
+    { name: 'Бангкок', zone: 'Asia/Bangkok', codes: ['б', 'bkk', 'бкк'], sort: 2 },
+    { name: 'Париж', zone: 'Europe/Paris', codes: ['п', 'p'], sort: 3 },
+    { name: 'Нью-Йорк', zone: 'America/New_York', codes: ['н', 'ny', 'ню'], sort: 4 }
 ];
 
 // Welcome image URL
@@ -219,17 +220,11 @@ bot.command("list", async (ctx) => {
     const now = Date.now();
     let lines = [];
     
-    // Current times
+    // Current times with tags in one line
     for (const city of cities) {
         const time = getTimeInCity(now, city.zone);
-        lines.push(`<code>${time}</code> — ${esc(city.name)}`);
-    }
-    lines.push("");
-    
-    // Tags (city first, then tags)
-    for (const city of cities) {
         const tags = city.codes.join(' ');
-        lines.push(`${esc(city.name)} | ${tags}`);
+        lines.push(`<code>${time}</code> — ${esc(city.name)} — ${tags}`);
     }
     lines.push("");
     lines.push("/help");
