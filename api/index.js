@@ -222,21 +222,21 @@ bot.command("list", async (ctx) => {
     // Current times
     for (const city of cities) {
         const time = getTimeInCity(now, city.zone);
-        lines.push(`${time} ${city.name}`);
+        lines.push(`<code>${time}</code> — ${esc(city.name)}`);
     }
     lines.push("");
     
     // Tags (city first, then tags)
     for (const city of cities) {
         const tags = city.codes.join(' ');
-        lines.push(`${city.name} | ${tags}`);
+        lines.push(`${esc(city.name)} | ${tags}`);
     }
     lines.push("");
     lines.push("/help");
     lines.push("/addcity");
     lines.push("/removecity");
 
-    await ctx.reply(lines.join("\n"));
+    await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
 });
 
 bot.command("addcity", async (ctx) => {
