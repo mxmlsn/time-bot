@@ -2,7 +2,21 @@ const { Bot, webhookCallback } = require("grammy");
 const Redis = require("ioredis");
 
 const bot = new Bot(process.env.BOT_TOKEN);
-const redis = new Redis(process.env.REDIS_URL);
+
+// Redis connection optimized for serverless
+let redis;
+try {
+    redis = new Redis(process.env.REDIS_URL, {
+        tls: process.env.REDIS_URL?.startsWith('rediss://') ? {} : undefined,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+        connectTimeout: 5000
+    });
+    redis.on('error', (err) => console.error('Redis error:', err.message));
+} catch (e) {
+    console.error('Redis init failed:', e.message);
+    redis = null;
+}
 
 // DEFAULT CITIES (used when chat has no custom settings)
 const DEFAULT_CITIES = [
@@ -18,7 +32,9 @@ const DEFAULT_CITIES = [
 
 // Get chat cities from Redis or return defaults
 async function getChatCities(chatId) {
+    if (!redis) return DEFAULT_CITIES;
     try {
+        await redis.connect().catch(() => {}); // ensure connected (lazyConnect)
         const stored = await redis.get(`chat:${chatId}:cities`);
         if (stored) {
             const parsed = JSON.parse(stored);
@@ -27,18 +43,20 @@ async function getChatCities(chatId) {
             }
         }
     } catch (e) {
-        console.error('Redis get error:', e);
+        console.error('Redis get error:', e.message);
     }
     return DEFAULT_CITIES;
 }
 
 // Save chat cities to Redis
 async function saveChatCities(chatId, cities) {
+    if (!redis) return false;
     try {
+        await redis.connect().catch(() => {}); // ensure connected (lazyConnect)
         await redis.set(`chat:${chatId}:cities`, JSON.stringify(cities));
         return true;
     } catch (e) {
-        console.error('Redis set error:', e);
+        console.error('Redis set error:', e.message);
         return false;
     }
 }
