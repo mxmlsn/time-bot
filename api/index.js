@@ -296,7 +296,7 @@ bot.command("addcity", async (ctx) => {
     await ctx.reply(choiceText);
 });
 
-bot.command("по", async (ctx) => {
+bot.command("no", async (ctx) => {
     const chatId = ctx.chat.id;
     const userId = ctx.from.id;
     const pending = await getPending(chatId, userId);
@@ -507,7 +507,7 @@ bot.on("message", async (ctx) => {
 
                 const plural = conflicts.length > 1;
                 await ctx.reply(
-                    `${conflictDetails}\n\n${plural ? 'Эти теги уже заняты' : 'Этот тег уже занят'}.\nЧто-нибудь другое?\n\nНажми /по, если замена не нужна.`
+                    `${conflictDetails}\n\n${plural ? 'Эти теги уже заняты' : 'Этот тег уже занят'}.\nЧто-нибудь другое?\n\nНажми /no, если замена не нужна.`
                 );
                 return;
             }
