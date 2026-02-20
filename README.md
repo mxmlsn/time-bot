@@ -1,116 +1,175 @@
-# ⏰ Telegram Time Bot
+# ⏰ QW Time Bot
 
-Time zone converter for distributed teams with customizable cities per chat.
+Конвертер часовых поясов для распределённых команд с настраиваемыми городами для каждого чата.
 
-## Features
+## Возможности
 
-- 🌍 **Customizable cities** — each chat can configure its own city list
-- 🔍 **Auto timezone detection** — just type city name, bot finds timezone via OpenStreetMap
-- 📅 **Google Calendar links** — instant meeting scheduling
-- 🔒 **Code validation** — prevents duplicate city codes
-- ⚡️ **Serverless** — runs on Vercel with KV storage
+- 🌍 **Настраиваемые города** — каждый чат может настроить свой список городов
+- 🔍 **Автоопределение часовых поясов** — просто введите название города, бот найдёт часовой пояс через OpenStreetMap
+- 📅 **Ссылки на Google Calendar** — мгновенное планирование встреч
+- 🔒 **Валидация кодов** — предотвращает дублирование кодов городов
+- 💬 **Интерактивные команды** — пошаговое добавление и удаление городов
+- ⚡️ **Serverless** — работает на Vercel с хранилищем KV
 
-## Quick Start
+## Быстрый старт
 
-### Public Bot (Shared Instance)
+### Публичный бот (общий экземпляр)
 
-Add [@your_bot_name](https://t.me/your_bot_name) to your chat.
+Добавьте [@your_bot_name](https://t.me/your_bot_name) в свой чат.
 
-### Deploy Your Own Copy
+### Развернуть свою копию
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmxmlsn%2Ftime-bot&env=BOT_TOKEN&envDescription=Telegram%20Bot%20Token%20from%20%40BotFather&project-name=time-bot&repository-name=time-bot&demo-title=Time%20Bot&demo-description=Time%20zone%20converter%20for%20distributed%20teams&stores=%5B%7B%22type%22%3A%22kv%22%7D%5D)
 
-**Setup:**
+**Настройка:**
 
-1. Create bot via [@BotFather](https://t.me/BotFather)
-2. Click **Deploy with Vercel** button above
-3. Add `BOT_TOKEN` environment variable
-4. Enable **Vercel KV** storage in project settings
-5. Set webhook: `https://your-project.vercel.app/api`
+1. Создайте бота через [@BotFather](https://t.me/BotFather)
+2. Нажмите кнопку **Deploy with Vercel** выше
+3. Добавьте переменную окружения `BOT_TOKEN`
+4. Включите **Vercel KV** хранилище в настройках проекта
+5. Установите webhook: `https://your-project.vercel.app/api`
 
 ```bash
 curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://your-project.vercel.app/api"
 ```
 
-## Usage
+## Использование
 
-### Time Conversion
+### Конвертация времени
 
-Just type time + city code in chat:
-
-```
-20м      → 20:00 Moscow time, converted to all cities
-15:30п   → 15:30 Paris time
-10ba     → 10:00 Buenos Aires
-```
-
-**Default cities:**
-- Париж (codes: `п`, `p`, `g`, `з`)
-- Ереван (codes: `е`, `e`, `y`, `t`)
-- Буэнос-Айрес (codes: `б`, `b`, `,`, `и`, `ба`, `ba`)
-- Москва (codes: `м`, `m`, `v`, `ь`)
-
-### Commands
-
-#### `/info`
-Show bot instructions and how to use
+Просто напишите время + код города в чате:
 
 ```
-/info
+20м      → 20:00 по московскому времени, конвертировано во все города
+15:30п   → 15:30 по парижскому времени
+10ba     → 10:00 Буэнос-Айрес
 ```
 
-#### `/cities`
-Show current cities for this chat
+**Города по умолчанию:**
+- Москва (коды: `м`, `m`, `msk`, `мск`)
+- Бангкок (коды: `б`, `b`, `bkk`, `бкк`)
+- Ереван (коды: `е`, `e`, `evn`, `ерв`)
+
+### Команды
+
+#### `/start`
+Приветственное сообщение при добавлении бота в чат
 
 ```
-/cities
+/start
 ```
+
+Показывает текущие города и краткую справку по командам.
+
+#### `/help`
+Показать инструкции бота и как им пользоваться
+
+```
+/help
+```
+
+#### `/list`
+Показать текущие города для этого чата с временем на данный момент
+
+```
+/list
+```
+
+Отображает:
+- Текущее время в каждом городе
+- Список тегов для каждого города
+- Ссылки на команды управления
 
 #### `/addcity`
-Add custom city (auto timezone detection)
+Добавить город (интерактивный режим)
 
+**Вариант 1: без указания города**
 ```
-/addcity Лондон л l ld lon
+/addcity
+```
+Бот спросит: "Какой город хочешь добавить?"
+
+**Вариант 2: с указанием города**
+```
+/addcity Лондон
 ```
 
-Bot will search "Лондон" via OpenStreetMap and:
-- If 1 result → add immediately
-- If multiple → ask you to choose (e.g., Paris France? Paris Texas?)
-- If not found → suggest trying different name
+Бот:
+- Найдёт город через OpenStreetMap
+- Если вариантов несколько — попросит выбрать (например, Лондон, Франция или Лондон, США)
+- Попросит указать теги через пробел
+- Проверит конфликты тегов
+- Добавит город с правильным написанием (первая буква заглавная)
 
-**Code validation:**
-- ❌ Can't use code already taken by another city
-- ✅ Bot will show conflict and suggest choosing different codes
-
-Example conflict:
+**Пример потока:**
 ```
-/addcity Милан м ml
+/addcity Стамбул
+→ По каким тегам запомнить город?
+  Например, для Стамбула удобно
+  с  ст  ist  стамбик
+  
+  Перечисли через пробел.
+→ с ст ist
+→ Добавлен город Стамбул.
+  Теги — с ст ist
+```
 
-❌ Ошибка: коды уже заняты
+**Валидация тегов:**
+- ❌ Нельзя использовать тег, уже занятый другим городом
+- ✅ Бот покажет конфликт и предложит выбрать другие теги
 
-`м` → Москва
+Пример конфликта:
+```
+/addcity Милан
+→ (после ввода тегов: м ml)
 
-Выбери другие коды для Милан
+✖ м — Москва
+
+Этот тег уже занят.
+Что-нибудь другое?
+
+Нажми /по, если замена не нужна.
 ```
 
 #### `/removecity`
-Remove city by code
+Удалить город
 
+**Вариант 1: с указанием города/кода**
 ```
 /removecity л
 ```
 
-## Architecture
+**Вариант 2: без указания**
+```
+/removecity
+```
+Бот покажет список городов с номерами и попросит ответить цифрой.
 
-- **Framework:** [grammY](https://grammy.dev/) (Telegram Bot API)
-- **Storage:** [Vercel KV](https://vercel.com/docs/storage/vercel-kv) (per-chat settings)
-- **Geocoding:** [Nominatim](https://nominatim.org/) (OpenStreetMap, no API key)
-- **Timezone API:** [TimeAPI.io](https://timeapi.io/) (coordinates → timezone)
-- **Hosting:** Vercel (serverless functions)
+**Множественное удаление:**
+```
+→ Какой город удалить?
 
-## Data Storage
+1. Лондон
+2. Париж
+3. Женева
 
-Cities are stored per chat in Vercel KV:
+Ответь цифрой или несколькими через пробел.
+
+→ 1 3
+→ Города Лондон, Женева удалены.
+```
+
+## Архитектура
+
+- **Фреймворк:** [grammY](https://grammy.dev/) (Telegram Bot API)
+- **Хранилище:** [Vercel KV](https://vercel.com/docs/storage/vercel-kv) (настройки для каждого чата)
+- **Геокодирование:** [Nominatim](https://nominatim.org/) (OpenStreetMap, без API ключа)
+- **API часовых поясов:** [TimeAPI.io](https://timeapi.io/) (координаты → часовой пояс)
+- **Хостинг:** Vercel (serverless functions)
+
+## Хранение данных
+
+Города хранятся для каждого чата в Vercel KV:
 
 ```
 chat:<chatId>:cities → [
@@ -118,37 +177,38 @@ chat:<chatId>:cities → [
 ]
 ```
 
-Pending choices (when multiple cities found):
+Ожидающие выборы (при многоступенчатых командах):
 
 ```
-pending:<chatId>:<userId> → { type: "addcity", ... }
+pending:<chatId>:<userId> → { step: "ask_tags", cityName: "Стамбул", zone: "Europe/Istanbul" }
 ```
 
-TTL: 5 minutes
+TTL: 5 минут
 
-## Development
+## Разработка
 
 ```bash
 npm install
 vercel dev
 ```
 
-Set webhook to ngrok/localhost:
+Установите webhook на ngrok/localhost:
 
 ```bash
 curl -X POST "https://api.telegram.org/bot<BOT_TOKEN>/setWebhook?url=https://your-ngrok-url.ngrok.io/api"
 ```
 
-## Environment Variables
+## Переменные окружения
 
-| Variable | Description | Required |
+| Переменная | Описание | Обязательна |
 |----------|-------------|----------|
-| `BOT_TOKEN` | Telegram bot token from @BotFather | ✅ |
+| `BOT_TOKEN` | Токен Telegram бота от @BotFather | ✅ |
+| `REDIS_URL` | URL Redis/Vercel KV (автоматически из Vercel) | ✅ |
 
-## License
+## Лицензия
 
 MIT
 
-## Support
+## Поддержка
 
 Issues: [GitHub Issues](https://github.com/mxmlsn/time-bot/issues)
