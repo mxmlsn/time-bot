@@ -52,6 +52,13 @@ Just type time + city code in chat:
 
 ### Commands
 
+#### `/info`
+Show bot instructions and how to use
+
+```
+/info
+```
+
 #### `/cities`
 Show current cities for this chat
 
@@ -68,34 +75,29 @@ Add custom city (auto timezone detection)
 
 Bot will search "Лондон" via OpenStreetMap and:
 - If 1 result → add immediately
-- If multiple → ask you to choose
-- If not found → suggest manual timezone
+- If multiple → ask you to choose (e.g., Paris France? Paris Texas?)
+- If not found → suggest trying different name
 
 **Code validation:**
 - ❌ Can't use code already taken by another city
 - ✅ Bot will show conflict and suggest choosing different codes
 
-#### `/addcity_tz`
-Add city with manual timezone (for precise control)
-
+Example conflict:
 ```
-/addcity_tz Лондон Europe/London л l ld
-```
+/addcity Милан м ml
 
-Find timezone: [List of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+❌ Ошибка: коды уже заняты
+
+`м` → Москва
+
+Выбери другие коды для Милан
+```
 
 #### `/removecity`
 Remove city by code
 
 ```
 /removecity л
-```
-
-#### `/reset`
-Restore default 4 cities
-
-```
-/reset
 ```
 
 ## Architecture

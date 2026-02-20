@@ -111,6 +111,38 @@ function formatGoogleDate(date) {
 // COMMAND HANDLERS
 // ============================================
 
+// /info - show how to use the bot
+bot.command("info", async (ctx) => {
+    const infoText = `
+🕐 **Time Bot — конвертер времени**
+
+**Как работает:**
+Пишешь время + код города → бот конвертирует для всех городов чата
+
+**Примеры:**
+• \`20м\` → 20:00 по Москве
+• \`15:30п\` → 15:30 по Парижу
+• \`10ba\` → 10:00 по Буэнос-Айресу
+
+**Команды:**
+
+\`/cities\` — показать города чата
+\`/addcity <название> <коды>\` — добавить город
+\`/removecity <код>\` — удалить город
+\`/info\` — эта справка
+
+**Добавить город:**
+\`/addcity Лондон л l ld lon\`
+
+Бот сам найдёт таймзону через OpenStreetMap. Если несколько вариантов (Paris France? Paris Texas?) — попросит выбрать.
+
+**Важно:** коды не могут повторяться
+Если код \`м\` занят Москвой — выбери другой для Милана (например: \`mln\`, \`mi\`)
+`.trim();
+
+    await ctx.reply(infoText, { parse_mode: "Markdown" });
+});
+
 // /cities - show current cities for chat
 bot.command("cities", async (ctx) => {
     const chatId = ctx.chat.id;
@@ -128,7 +160,7 @@ bot.command("cities", async (ctx) => {
     text += "Команды:\n";
     text += "`/addcity <название> <коды>` — добавить город\n";
     text += "`/removecity <код>` — удалить город\n";
-    text += "`/reset` — вернуть дефолтные города";
+    text += "`/info` — справка";
     
     await ctx.reply(text, { parse_mode: "Markdown" });
 });
@@ -183,8 +215,7 @@ bot.command("addcity", async (ctx) => {
     if (!results || results.length === 0) {
         await ctx.reply(
             `❌ Не нашёл город "${cityName}"\n\n` +
-            `Попробуй другое название или укажи таймзону вручную:\n` +
-            "`/addcity_tz <название> <timezone> <коды>`",
+            `Попробуй другое название или уточни запрос`,
             { parse_mode: "Markdown" }
         );
         return;
@@ -231,68 +262,6 @@ bot.command("addcity", async (ctx) => {
     await ctx.reply(choiceText);
 });
 
-// /addcity_tz - add city with manual timezone
-bot.command("addcity_tz", async (ctx) => {
-    const chatId = ctx.chat.id;
-    const args = ctx.message.text.split(/\s+/).slice(1);
-    
-    if (args.length < 3) {
-        await ctx.reply(
-            "❌ Неправильный формат\n\n" +
-            "Используй:\n" +
-            "`/addcity_tz <название> <timezone> <код1> <код2> ...`\n\n" +
-            "Пример:\n" +
-            "`/addcity_tz Лондон Europe/London л l ld`",
-            { parse_mode: "Markdown" }
-        );
-        return;
-    }
-    
-    const cityName = args[0];
-    const timezone = args[1];
-    const codes = args.slice(2).map(c => c.toLowerCase());
-    
-    // Validate codes uniqueness
-    const currentCities = await getChatCities(chatId);
-    const existingCodes = currentCities.flatMap(c => c.codes.map(code => code.toLowerCase()));
-    
-    const conflicts = codes.filter(code => existingCodes.includes(code));
-    
-    if (conflicts.length > 0) {
-        const conflictDetails = conflicts.map(code => {
-            const city = currentCities.find(c => 
-                c.codes.map(c => c.toLowerCase()).includes(code)
-            );
-            return `\`${code}\` → ${city.name}`;
-        }).join('\n');
-        
-        await ctx.reply(
-            `❌ **Ошибка: коды уже заняты**\n\n${conflictDetails}\n\n` +
-            `Выбери другие коды для ${cityName}`,
-            { parse_mode: "Markdown" }
-        );
-        return;
-    }
-    
-    // Add city
-    const newCity = {
-        name: cityName,
-        zone: timezone,
-        codes: codes,
-        sort: currentCities.length + 1
-    };
-    
-    currentCities.push(newCity);
-    await saveChatCities(chatId, currentCities);
-    
-    await ctx.reply(
-        `✅ **Добавлен город:**\n\n` +
-        `${cityName} (${timezone})\n` +
-        `Коды: ${codes.map(c => `\`${c}\``).join(', ')}`,
-        { parse_mode: "Markdown" }
-    );
-});
-
 // /removecity - remove city by code
 bot.command("removecity", async (ctx) => {
     const chatId = ctx.chat.id;
@@ -333,19 +302,6 @@ bot.command("removecity", async (ctx) => {
     await saveChatCities(chatId, filtered);
     
     await ctx.reply(`✅ Удалён город: **${cityToRemove.name}**`, { parse_mode: "Markdown" });
-});
-
-// /reset - restore default cities
-bot.command("reset", async (ctx) => {
-    const chatId = ctx.chat.id;
-    
-    await saveChatCities(chatId, DEFAULT_CITIES);
-    
-    await ctx.reply(
-        "✅ **Восстановлены дефолтные города:**\n\n" +
-        DEFAULT_CITIES.map(c => `• ${c.name}`).join('\n'),
-        { parse_mode: "Markdown" }
-    );
 });
 
 // ============================================
