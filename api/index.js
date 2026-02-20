@@ -157,7 +157,7 @@ bot.command("cities", async (ctx) => {
     cities.sort((a, b) => a.sort - b.sort);
     
     for (const city of cities) {
-        const codes = city.codes.map(c => `\`${c}\``).join(', ');
+        const codes = city.codes.join(', ');
         text += `• **${city.name}** (${city.zone})\n  коды: ${codes}\n\n`;
     }
     
@@ -240,7 +240,7 @@ bot.command("addcity", async (ctx) => {
         await ctx.reply(
             `✅ **Добавлен город:**\n\n` +
             `${cityName} (${results[0].zone})\n` +
-            `Коды: ${codes.map(c => `\`${c}\``).join(', ')}`,
+            `Коды: ${codes.join(', ')}`,
             { parse_mode: "Markdown" }
         );
         return;
@@ -354,7 +354,7 @@ bot.on("message", async (ctx) => {
                     await ctx.reply(
                         `✅ **Добавлен город:**\n\n` +
                         `${pending.cityName} (${selected.zone})\n` +
-                        `Коды: ${pending.codes.map(c => `\`${c}\``).join(', ')}`,
+                        `Коды: ${pending.codes.join(', ')}`,
                         { parse_mode: "Markdown" }
                     );
                     return;
