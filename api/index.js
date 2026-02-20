@@ -255,7 +255,7 @@ bot.command("addcity", async (ctx) => {
     const currentCities = await getChatCities(chatId);
     const existingCity = currentCities.find(c => c.name.toLowerCase() === capitalizeCity(cityName).toLowerCase());
     if (existingCity) {
-        await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+        await ctx.reply(`Город ${existingCity.name} уже добавлен. Теги — ${existingCity.codes.join(' ')}`);
         return;
     }
     
@@ -317,7 +317,7 @@ bot.command("по", async (ctx) => {
     const existingCity = currentCities.find(c => c.name.toLowerCase() === pending.cityName.toLowerCase());
     if (existingCity) {
         await deletePending(chatId, userId);
-        await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+        await ctx.reply(`Город ${existingCity.name} уже добавлен. Теги — ${existingCity.codes.join(' ')}`);
         return;
     }
     
@@ -402,7 +402,7 @@ bot.on("message", async (ctx) => {
             const existingCity = currentCities.find(c => c.name.toLowerCase() === capitalizeCity(cityName).toLowerCase());
             if (existingCity) {
                 await deletePending(chatId, userId);
-                await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+                await ctx.reply(`Город ${existingCity.name} уже добавлен. Теги — ${existingCity.codes.join(' ')}`);
                 return;
             }
             
@@ -456,7 +456,7 @@ bot.on("message", async (ctx) => {
             const existingCity = currentCities.find(c => c.name.toLowerCase() === pending.cityName.toLowerCase());
             if (existingCity) {
                 await deletePending(chatId, userId);
-                await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+                await ctx.reply(`Город ${existingCity.name} уже добавлен. Теги — ${existingCity.codes.join(' ')}`);
                 return;
             }
 
@@ -516,7 +516,7 @@ bot.on("message", async (ctx) => {
             const existingCity = currentCities.find(c => c.name.toLowerCase() === pending.cityName.toLowerCase());
             if (existingCity) {
                 await deletePending(chatId, userId);
-                await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+                await ctx.reply(`Город ${existingCity.name} уже добавлен. Теги — ${existingCity.codes.join(' ')}`);
                 return;
             }
 
