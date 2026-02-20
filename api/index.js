@@ -169,15 +169,15 @@ bot.command("start", async (ctx) => {
     const cityNames = cities.map(c => c.name).join(', ');
 
     const caption = [
-        "QW time bot — самый быстрый способ собрать все часовые пояса вместе внутри Телеграм.",
+        "QW time bot — самый быстрый способ собрать все часовые пояса вместе внутри телеграм.",
         "",
-        `Жми /addcity, чтобы добавить нужный город.`,
+        "Жми /addcity, чтобы добавить нужный город.",
         "",
         `Сейчас уже добавлены ${cityNames}.`,
         "Жми на /removecity, если хочешь что-то удалить.",
         "",
-        "Актуальный список /list",
-        "За инструкцией /help"
+        "Актуальный список /list.",
+        "За инструкцией /help."
     ].join("\n");
 
     try {
@@ -188,20 +188,20 @@ bot.command("start", async (ctx) => {
 });
 
 bot.command("help", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const cities = await getChatCities(chatId);
+    const cityNames = cities.map(c => c.name).join(', ');
+
     const caption = [
-        "QW time bot — самый быстрый способ собрать все часовые пояса вместе внутри Телеграм.",
+        "QW time bot — самый быстрый способ собрать все часовые пояса вместе внутри телеграм.",
         "",
-        "Пишешь время и код города — бот покажет это время во всех городах чата.",
+        "Жми /addcity, чтобы добавить нужный город.",
         "",
-        "Пример:",
-        "18п — покажет 18:00 по Парижу и сколько это в каждом городе чата.",
+        `Сейчас уже добавлены ${cityNames}.`,
+        "Жми на /removecity, если хочешь что-то удалить.",
         "",
-        "Код — сокращение, которое задаётся при добавлении города (п, ba, lon — что угодно).",
-        "",
-        "Команды:",
-        "/list — города и их коды",
-        "/addcity название код код — добавить (пишите просто слова через пробел)",
-        "/removecity код — удалить"
+        "Актуальный список /list.",
+        "За инструкцией /help."
     ].join("\n");
 
     try {
@@ -226,10 +226,10 @@ bot.command("list", async (ctx) => {
     }
     lines.push("");
     
-    // Tags
+    // Tags (city first, then tags)
     for (const city of cities) {
         const tags = city.codes.join(' ');
-        lines.push(`${tags} │ ${city.name}`);
+        lines.push(`${city.name} | ${tags}`);
     }
     lines.push("");
     lines.push("/help");
@@ -286,6 +286,34 @@ bot.command("addcity", async (ctx) => {
         results: results
     });
     await ctx.reply(choiceText);
+});
+
+bot.command("по", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const userId = ctx.from.id;
+    const pending = await getPending(chatId, userId);
+
+    if (!pending || pending.step !== 'ask_tags' || !pending.savedCodes) {
+        return; // No pending add city flow or no saved codes
+    }
+
+    if (pending.savedCodes.length === 0) {
+        await deletePending(chatId, userId);
+        await ctx.reply("Не указано ни одного тега. Добавление отменено.");
+        return;
+    }
+
+    const currentCities = await getChatCities(chatId);
+    const newCity = {
+        name: pending.cityName,
+        zone: pending.zone,
+        codes: pending.savedCodes,
+        sort: currentCities.length + 1
+    };
+    currentCities.push(newCity);
+    await saveChatCities(chatId, currentCities);
+    await deletePending(chatId, userId);
+    await ctx.reply(`Добавлен город ${newCity.name}.\nТеги — ${pending.savedCodes.join(' ')}`);
 });
 
 bot.command("removecity", async (ctx) => {
@@ -431,6 +459,16 @@ bot.on("message", async (ctx) => {
                     return `✖ ${code} — ${city.name}`;
                 }).join('\n');
 
+                const nonConflictCodes = codes.filter(code => !existingCodes.includes(code));
+                
+                // Save non-conflict codes in pending
+                await setPending(chatId, userId, {
+                    step: 'ask_tags',
+                    cityName: pending.cityName,
+                    zone: pending.zone,
+                    savedCodes: nonConflictCodes
+                });
+
                 const plural = conflicts.length > 1;
                 await ctx.reply(
                     `${conflictDetails}\n\n${plural ? 'Эти теги уже заняты' : 'Этот тег уже занят'}.\nЧто-нибудь другое?\n\nНажми /по, если замена не нужна.`
@@ -438,16 +476,19 @@ bot.on("message", async (ctx) => {
                 return;
             }
 
+            // Merge with saved codes if any
+            const allCodes = pending.savedCodes ? [...pending.savedCodes, ...codes] : codes;
+
             const newCity = {
                 name: pending.cityName,
                 zone: pending.zone,
-                codes: codes,
+                codes: allCodes,
                 sort: currentCities.length + 1
             };
             currentCities.push(newCity);
             await saveChatCities(chatId, currentCities);
             await deletePending(chatId, userId);
-            await ctx.reply(`Добавлен город ${newCity.name}.\nТеги — ${codes.join(' ')}`);
+            await ctx.reply(`Добавлен город ${newCity.name}.\nТеги — ${allCodes.join(' ')}`);
             return;
         }
 
