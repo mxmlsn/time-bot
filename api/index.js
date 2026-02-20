@@ -253,12 +253,17 @@ bot.command("removecity", async (ctx) => {
         return;
     }
 
-    const code = args[0].toLowerCase();
+    const input = args.join(' ').toLowerCase();
     const currentCities = await getChatCities(chatId);
-    const cityToRemove = findCityByCode(currentCities, code);
+    
+    // search by code first, then by name
+    let cityToRemove = findCityByCode(currentCities, input);
+    if (!cityToRemove) {
+        cityToRemove = currentCities.find(c => c.name.toLowerCase() === input);
+    }
 
     if (!cityToRemove) {
-        await ctx.reply(`Город с кодом "${code}" не найден`);
+        await ctx.reply(`Город "${input}" не найден (ни по коду, ни по названию)`);
         return;
     }
 
