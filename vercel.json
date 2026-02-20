@@ -1,0 +1,10 @@
+{
+  "env": {
+    "BOT_TOKEN": "@bot_token"
+  },
+  "build": {
+    "env": {
+      "BOT_TOKEN": "@bot_token"
+    }
+  }
+}
