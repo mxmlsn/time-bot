@@ -92,7 +92,7 @@ function buildRegex(cities) {
     const allCodes = cities.flatMap(c => c.codes).map(code =>
         code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     ).join('|');
-    return new RegExp(`(\\d{1,2})(?:[:\.](\\d{2}))?\\s*(${allCodes})(?!\\s*[a-zа-яёA-ZА-ЯЁ])`, 'i');
+    return new RegExp(`(\\d{1,2})(?:[:\.](\\d{2}))?\\s*(${allCodes})(?![a-zа-яёA-ZА-ЯЁ])`, 'i');
 }
 
 function findCityByCode(cities, code) {
