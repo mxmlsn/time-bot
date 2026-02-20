@@ -42,7 +42,7 @@ async function getChatCities(chatId) {
     } catch (e) {
         console.error('Redis get error:', e.message);
     }
-    return DEFAULT_CITIES;
+    return JSON.parse(JSON.stringify(DEFAULT_CITIES));
 }
 
 async function saveChatCities(chatId, cities) {
