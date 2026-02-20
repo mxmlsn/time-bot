@@ -250,6 +250,15 @@ bot.command("addcity", async (ctx) => {
     }
 
     const cityName = args[0];
+    
+    // Check if city already exists
+    const currentCities = await getChatCities(chatId);
+    const existingCity = currentCities.find(c => c.name.toLowerCase() === capitalizeCity(cityName).toLowerCase());
+    if (existingCity) {
+        await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+        return;
+    }
+    
     await ctx.reply(`Ищу ${capitalizeCity(cityName)}...`);
     const results = await searchCityTimezone(cityName);
 
@@ -303,6 +312,15 @@ bot.command("по", async (ctx) => {
     }
 
     const currentCities = await getChatCities(chatId);
+    
+    // Check if city already exists
+    const existingCity = currentCities.find(c => c.name.toLowerCase() === pending.cityName.toLowerCase());
+    if (existingCity) {
+        await deletePending(chatId, userId);
+        await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+        return;
+    }
+    
     const newCity = {
         name: pending.cityName,
         zone: pending.zone,
@@ -378,6 +396,16 @@ bot.on("message", async (ctx) => {
         // Handle pending workflows
         if (pending.step === 'ask_city') {
             const cityName = text;
+            
+            // Check if city already exists
+            const currentCities = await getChatCities(chatId);
+            const existingCity = currentCities.find(c => c.name.toLowerCase() === capitalizeCity(cityName).toLowerCase());
+            if (existingCity) {
+                await deletePending(chatId, userId);
+                await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
+                return;
+            }
+            
             await ctx.reply(`Ищу ${capitalizeCity(cityName)}...`);
             const results = await searchCityTimezone(cityName);
 
@@ -420,6 +448,15 @@ bot.on("message", async (ctx) => {
             const choice = parseInt(text) - 1;
             if (isNaN(choice) || choice < 0 || choice >= pending.results.length) {
                 await ctx.reply("Выбери номер из списка.");
+                return;
+            }
+
+            // Check if city already exists
+            const currentCities = await getChatCities(chatId);
+            const existingCity = currentCities.find(c => c.name.toLowerCase() === pending.cityName.toLowerCase());
+            if (existingCity) {
+                await deletePending(chatId, userId);
+                await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
                 return;
             }
 
@@ -472,6 +509,14 @@ bot.on("message", async (ctx) => {
                 await ctx.reply(
                     `${conflictDetails}\n\n${plural ? 'Эти теги уже заняты' : 'Этот тег уже занят'}.\nЧто-нибудь другое?\n\nНажми /по, если замена не нужна.`
                 );
+                return;
+            }
+
+            // Check if city already exists (race condition protection)
+            const existingCity = currentCities.find(c => c.name.toLowerCase() === pending.cityName.toLowerCase());
+            if (existingCity) {
+                await deletePending(chatId, userId);
+                await ctx.reply(`Город ${existingCity.name} уже добавлен.`);
                 return;
             }
 
