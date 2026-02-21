@@ -729,9 +729,9 @@ bot.on("message", async (ctx) => {
         // Compare dates
         let dayLabel = '';
         if (cityDateStr > sourceCityDateStr) {
-            dayLabel = ' (завтра)';
+            dayLabel = ' →';
         } else if (cityDateStr < sourceCityDateStr) {
-            dayLabel = ' (вчера)';
+            dayLabel = ' ←';
         }
         
         resultLines.push({ 
