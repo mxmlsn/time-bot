@@ -97,14 +97,14 @@ async function deletePending(chatId, userId) {
 }
 
 async function getCalendarSettings(chatId) {
-    if (!redis) return { enabled: true, title: "qw meet" };
+    if (!redis) return { enabled: true, title: "QW meet" };
     try {
         await redis.connect().catch(() => {});
         const data = await redis.get(`chat:${chatId}:calendar`);
-        return data ? JSON.parse(data) : { enabled: true, title: "qw meet" };
+        return data ? JSON.parse(data) : { enabled: true, title: "QW meet" };
     } catch (e) {
         console.error('Redis get calendar error:', e.message);
-        return { enabled: true, title: "qw meet" };
+        return { enabled: true, title: "QW meet" };
     }
 }
 
