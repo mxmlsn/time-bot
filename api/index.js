@@ -427,7 +427,7 @@ bot.command("calendar", async (ctx) => {
         if (settings.enabled) {
             await setPending(chatId, userId, { step: 'rename_calendar' });
             await ctx.reply(
-                `Ссылка на Google Calendar активна.\nНазвание: ${settings.title}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.`
+                `Ссылка на Google Calendar активна.\nНазвание: ${settings.title}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.\nЕсли всё ок жми /skip`
             );
         } else {
             await ctx.reply(
@@ -440,7 +440,7 @@ bot.command("calendar", async (ctx) => {
     // Set new title and enable
     const newTitle = args.join(' ');
     await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
-    await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.`);
+    await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.\nЕсли всё ок жми /skip`);
 });
 
 bot.command("off", async (ctx) => {
@@ -463,7 +463,14 @@ bot.command("on", async (ctx) => {
 
     const newTitle = args.join(' ');
     await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
-    await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.`);
+    await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.\nЕсли всё ок жми /skip`);
+});
+
+bot.command("skip", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const userId = ctx.from.id;
+    await deletePending(chatId, userId);
+    await ctx.reply("Готово.");
 });
 
 // ============================================
@@ -659,7 +666,7 @@ bot.on("message", async (ctx) => {
             
             await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
             await deletePending(chatId, userId);
-            await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.`);
+            await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.\nЕсли всё ок жми /skip`);
             return;
         }
 
@@ -672,7 +679,7 @@ bot.on("message", async (ctx) => {
             
             await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
             await deletePending(chatId, userId);
-            await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.`);
+            await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.\nЕсли всё ок жми /skip`);
             return;
         }
     }
