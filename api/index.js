@@ -160,7 +160,7 @@ function buildRegex(cities) {
     const allCodes = cities.flatMap(c => c.codes).map(code =>
         code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     ).join('|');
-    return new RegExp(`\\b(\\d{1,2})(?:[:\.](\\d{2}))?\\s*(${allCodes})(?![a-zа-яёA-ZА-ЯЁ])`, 'i');
+    return new RegExp(`\\b(\\d{1,2})(?:[:\.](\\d{2}))?\\s*(${allCodes})(?![a-zа-яёA-ZА-ЯЁ0-9])`, 'i');
 }
 
 function findCityByCode(cities, code) {
