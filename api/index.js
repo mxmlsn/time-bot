@@ -431,7 +431,7 @@ bot.command("calendar", async (ctx) => {
             );
         } else {
             await ctx.reply(
-                `Календарная ссылка выключена.\n\nЧтобы включить, нажми /on и напиши название встречи.`
+                `Календарная ссылка выключена.\n\nЧтобы включить, нажми /on`
             );
         }
         return;
@@ -469,8 +469,9 @@ bot.command("on", async (ctx) => {
 bot.command("skip", async (ctx) => {
     const chatId = ctx.chat.id;
     const userId = ctx.from.id;
+    const settings = await getCalendarSettings(chatId);
     await deletePending(chatId, userId);
-    await ctx.reply("Готово.");
+    await ctx.reply(`Ок, название осталось прежним — ${settings.title}`);
 });
 
 // ============================================
