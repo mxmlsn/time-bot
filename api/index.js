@@ -639,7 +639,8 @@ bot.on("message", async (ctx) => {
             const validIndices = indices.filter(i => !isNaN(i) && i >= 0 && i < pending.cities.length);
             
             if (validIndices.length === 0) {
-                await ctx.reply("Выбери номер из списка.");
+                // Silently cancel if input is invalid
+                await deletePending(chatId, userId);
                 return;
             }
 
