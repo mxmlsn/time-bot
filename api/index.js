@@ -26,8 +26,8 @@ const DEFAULT_CITIES = [
     { name: 'Нью-Йорк', zone: 'America/New_York', codes: ['н', 'ny', 'ню'], sort: 4 }
 ];
 
-// Welcome image URL
-const WELCOME_IMAGE = "https://raw.githubusercontent.com/mxmlsn/time-bot/main/welcome%20img.png";
+// Welcome animation URL
+const WELCOME_ANIMATION = "https://raw.githubusercontent.com/mxmlsn/time-bot/main/welcome.mp4";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -184,7 +184,7 @@ bot.command("start", async (ctx) => {
     ].join("\n");
 
     try {
-        await ctx.replyWithPhoto(WELCOME_IMAGE, { caption });
+        await ctx.replyWithAnimation(WELCOME_ANIMATION, { caption });
     } catch (e) {
         await ctx.reply(caption);
     }
@@ -210,7 +210,7 @@ bot.command("help", async (ctx) => {
     ].join("\n");
 
     try {
-        await ctx.replyWithPhoto(WELCOME_IMAGE, { caption });
+        await ctx.replyWithAnimation(WELCOME_ANIMATION, { caption });
     } catch (e) {
         await ctx.reply(caption);
     }
