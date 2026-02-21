@@ -407,12 +407,14 @@ bot.command("removecity", async (ctx) => {
 
 bot.command("calendar", async (ctx) => {
     const chatId = ctx.chat.id;
+    const userId = ctx.from.id;
     const args = ctx.message.text.split(/\s+/).slice(1);
     const settings = await getCalendarSettings(chatId);
 
     if (args.length === 0) {
         // Show current status
         if (settings.enabled) {
+            await setPending(chatId, userId, { step: 'rename_calendar' });
             await ctx.reply(
                 `Ссылка на Google Calendar активна.\nНазвание: ${settings.title}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.`
             );
@@ -638,6 +640,19 @@ bot.on("message", async (ctx) => {
         }
 
         if (pending.step === 'ask_calendar_title') {
+            const newTitle = text.trim();
+            if (newTitle.length === 0) {
+                await ctx.reply("Укажи название встречи.");
+                return;
+            }
+            
+            await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
+            await deletePending(chatId, userId);
+            await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.`);
+            return;
+        }
+
+        if (pending.step === 'rename_calendar') {
             const newTitle = text.trim();
             if (newTitle.length === 0) {
                 await ctx.reply("Укажи название встречи.");
