@@ -666,7 +666,8 @@ bot.on("message", async (ctx) => {
             }
             
             await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
-            await deletePending(chatId, userId);
+            // Keep pending state active to allow multiple renames
+            await setPending(chatId, userId, { step: 'rename_calendar' });
             await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.\nЕсли всё ок жми /skip`);
             return;
         }
@@ -679,7 +680,8 @@ bot.on("message", async (ctx) => {
             }
             
             await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
-            await deletePending(chatId, userId);
+            // Keep pending state active to allow multiple renames
+            // No need to call setPending again - state is already 'rename_calendar'
             await ctx.reply(`Ссылка на Google Calendar активна.\nНазвание: ${newTitle}\n\nНапиши новое название чтобы переименовать.\nНажми /off если ссылка не нужна.\nЕсли всё ок жми /skip`);
             return;
         }
