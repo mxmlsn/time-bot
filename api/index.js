@@ -711,14 +711,33 @@ bot.on("message", async (ctx) => {
     const diff = targetDate.getTime() - cityDateCurrent.getTime();
     const absoluteTargetTime = new Date().getTime() + diff;
 
+    // Get source city date for comparison (YYYY-MM-DD string)
+    const sourceCityDateStr = new Date(absoluteTargetTime).toLocaleDateString("en-CA", { 
+        timeZone: sourceCity.zone
+    });
+
     let resultLines = [];
     for (let city of cities) {
         const timeString = getTimeInCity(absoluteTargetTime, city.zone);
         const [hours, minutes] = timeString.split(':').map(n => parseInt(n));
+        
+        // Get date in this city (YYYY-MM-DD string)
+        const cityDateStr = new Date(absoluteTargetTime).toLocaleDateString("en-CA", { 
+            timeZone: city.zone
+        });
+        
+        // Compare dates
+        let dayLabel = '';
+        if (cityDateStr > sourceCityDateStr) {
+            dayLabel = ' (завтра)';
+        } else if (cityDateStr < sourceCityDateStr) {
+            dayLabel = ' (вчера)';
+        }
+        
         resultLines.push({ 
             hours, 
             minutes, 
-            text: `<code>${timeString}</code> — ${esc(city.name)}` 
+            text: `<code>${timeString}</code> — ${esc(city.name)}${dayLabel}` 
         });
     }
     // Sort by time (hours then minutes)
