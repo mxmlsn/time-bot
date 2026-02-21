@@ -272,6 +272,7 @@ bot.command("list", async (ctx) => {
     lines.push("/addcity");
     lines.push("/removecity");
     lines.push("/calendar");
+    lines.push("/list");
 
     await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
 });
