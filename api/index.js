@@ -284,7 +284,7 @@ bot.command("addcity", async (ctx) => {
 
     if (args.length === 0) {
         await setPending(chatId, userId, { step: 'ask_city' });
-        await ctx.reply("Какой город хочешь добавить?");
+        await ctx.reply("Какой город хочешь добавить?\n\nЖми /exit чтобы отменить добавление.");
         return;
     }
 
@@ -316,7 +316,8 @@ bot.command("addcity", async (ctx) => {
             "По каким тегам запомнить город?\n" +
             "Например, для Стамбула удобно\n" +
             "с  ст  ist  стамбик\n\n" +
-            "Перечисли через пробел."
+            "Перечисли через пробел.\n\n" +
+            "Жми /exit чтобы отменить добавление."
         );
         return;
     }
@@ -326,6 +327,7 @@ bot.command("addcity", async (ctx) => {
     results.forEach((r, i) => {
         choiceText += `${i + 1}. ${r.name}\n`;
     });
+    choiceText += '\n\nЖми /exit чтобы отменить добавление.';
 
     await setPending(chatId, userId, {
         step: 'choose_city',
@@ -476,6 +478,18 @@ bot.command("skip", async (ctx) => {
     await ctx.reply(`Ок, название осталось прежним — <b>${esc(settings.title)}</b>`, { parse_mode: "HTML" });
 });
 
+bot.command("exit", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const userId = ctx.from.id;
+    const pending = await getPending(chatId, userId);
+    
+    // Silently cancel if in addcity flow
+    if (pending && (pending.step === 'ask_city' || pending.step === 'choose_city' || pending.step === 'ask_tags')) {
+        await deletePending(chatId, userId);
+        // No reply - silent exit
+    }
+});
+
 // ============================================
 // MESSAGE HANDLER (pending states + time conversion)
 // ============================================
@@ -523,7 +537,8 @@ bot.on("message", async (ctx) => {
                     "По каким тегам запомнить город?\n" +
                     "Например, для Стамбула удобно\n" +
                     "с  ст  ist  стамбик\n\n" +
-                    "Перечисли через пробел."
+                    "Перечисли через пробел.\n\n" +
+                    "Жми /exit чтобы отменить добавление."
                 );
                 return;
             }
@@ -532,6 +547,7 @@ bot.on("message", async (ctx) => {
             results.forEach((r, i) => {
                 choiceText += `${i + 1}. ${r.name}\n`;
             });
+            choiceText += '\n\nЖми /exit чтобы отменить добавление.';
 
             await setPending(chatId, userId, {
                 step: 'choose_city',
@@ -568,7 +584,8 @@ bot.on("message", async (ctx) => {
                 "По каким тегам запомнить город?\n" +
                 "Например, для Стамбула удобно\n" +
                 "с  ст  ist  стамбик\n\n" +
-                "Перечисли через пробел."
+                "Перечисли через пробел.\n\n" +
+                "Жми /exit чтобы отменить добавление."
             );
             return;
         }
@@ -605,7 +622,7 @@ bot.on("message", async (ctx) => {
 
                 const plural = conflicts.length > 1;
                 await ctx.reply(
-                    `${conflictDetails}\n\n${plural ? 'Эти теги уже заняты' : 'Этот тег уже занят'}.\nЧто-нибудь другое?\n\nНажми /no, если замена не нужна.`
+                    `${conflictDetails}\n\n${plural ? 'Эти теги уже заняты' : 'Этот тег уже занят'}.\nЧто-нибудь другое?\n\nНажми /no, если замена не нужна.\nЖми /exit чтобы отменить добавление.`
                 );
                 return;
             }
