@@ -245,16 +245,27 @@ bot.command("help", async (ctx) => {
 bot.command("list", async (ctx) => {
     const chatId = ctx.chat.id;
     const cities = await getChatCities(chatId);
-    cities.sort((a, b) => a.sort - b.sort);
 
     const now = Date.now();
-    let lines = [];
+    let cityTimes = [];
     
-    // Current times with tags in one line
+    // Get time for each city
     for (const city of cities) {
         const time = getTimeInCity(now, city.zone);
         const tags = city.codes.join(' ');
-        lines.push(`<code>${time}</code> — ${esc(city.name)} — ${tags}`);
+        const [hours, minutes] = time.split(':').map(n => parseInt(n));
+        cityTimes.push({ time, city: city.name, tags, hours, minutes });
+    }
+    
+    // Sort by time (hours then minutes)
+    cityTimes.sort((a, b) => {
+        if (a.hours !== b.hours) return a.hours - b.hours;
+        return a.minutes - b.minutes;
+    });
+    
+    let lines = [];
+    for (const ct of cityTimes) {
+        lines.push(`<code>${ct.time}</code> — ${esc(ct.city)} — ${ct.tags}`);
     }
     lines.push("");
     lines.push("/help");
@@ -691,9 +702,18 @@ bot.on("message", async (ctx) => {
     let resultLines = [];
     for (let city of cities) {
         const timeString = getTimeInCity(absoluteTargetTime, city.zone);
-        resultLines.push({ sort: city.sort, text: `<code>${timeString}</code> — ${esc(city.name)}` });
+        const [hours, minutes] = timeString.split(':').map(n => parseInt(n));
+        resultLines.push({ 
+            hours, 
+            minutes, 
+            text: `<code>${timeString}</code> — ${esc(city.name)}` 
+        });
     }
-    resultLines.sort((a, b) => a.sort - b.sort);
+    // Sort by time (hours then minutes)
+    resultLines.sort((a, b) => {
+        if (a.hours !== b.hours) return a.hours - b.hours;
+        return a.minutes - b.minutes;
+    });
     let replyText = resultLines.map(line => line.text).join('\n');
 
     const calendarSettings = await getCalendarSettings(chatId);
