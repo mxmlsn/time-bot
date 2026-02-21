@@ -96,6 +96,30 @@ async function deletePending(chatId, userId) {
     }
 }
 
+async function getCalendarSettings(chatId) {
+    if (!redis) return { enabled: true, title: "qw meet" };
+    try {
+        await redis.connect().catch(() => {});
+        const data = await redis.get(`chat:${chatId}:calendar`);
+        return data ? JSON.parse(data) : { enabled: true, title: "qw meet" };
+    } catch (e) {
+        console.error('Redis get calendar error:', e.message);
+        return { enabled: true, title: "qw meet" };
+    }
+}
+
+async function saveCalendarSettings(chatId, settings) {
+    if (!redis) return false;
+    try {
+        await redis.connect().catch(() => {});
+        await redis.set(`chat:${chatId}:calendar`, JSON.stringify(settings));
+        return true;
+    } catch (e) {
+        console.error('Redis set calendar error:', e.message);
+        return false;
+    }
+}
+
 async function searchCityTimezone(cityName) {
     try {
         const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=5`;
@@ -234,6 +258,7 @@ bot.command("list", async (ctx) => {
     lines.push("/help");
     lines.push("/addcity");
     lines.push("/removecity");
+    lines.push("/calendar");
 
     await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
 });
@@ -376,6 +401,54 @@ bot.command("removecity", async (ctx) => {
 
     await saveChatCities(chatId, filtered);
     await ctx.reply(`Город ${cityToRemove.name} удалён.`);
+});
+
+bot.command("calendar", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const args = ctx.message.text.split(/\s+/).slice(1);
+    const settings = await getCalendarSettings(chatId);
+
+    if (args.length === 0) {
+        // Show current status
+        if (settings.enabled) {
+            await ctx.reply(
+                `Календарная ссылка включена.\nНазвание встречи: ${settings.title}\n\nЧтобы выключить, нажми /off`
+            );
+        } else {
+            await ctx.reply(
+                `Календарная ссылка выключена.\n\nЧтобы включить, нажми /on и напиши название встречи.`
+            );
+        }
+        return;
+    }
+
+    // Set new title and enable
+    const newTitle = args.join(' ');
+    await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
+    await ctx.reply(`Календарная ссылка включена.\nНазвание встречи: ${newTitle}\n\nЧтобы выключить, нажми /off`);
+});
+
+bot.command("off", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const settings = await getCalendarSettings(chatId);
+    await saveCalendarSettings(chatId, { ...settings, enabled: false });
+    await ctx.reply(`Календарная ссылка выключена.\n\nЧтобы включить, нажми /on и напиши название встречи.`);
+});
+
+bot.command("on", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const userId = ctx.from.id;
+    const args = ctx.message.text.split(/\s+/).slice(1);
+
+    if (args.length === 0) {
+        await setPending(chatId, userId, { step: 'ask_calendar_title' });
+        await ctx.reply("Какое название встречи использовать по умолчанию?");
+        return;
+    }
+
+    const newTitle = args.join(' ');
+    await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
+    await ctx.reply(`Календарная ссылка включена.\nНазвание встречи: ${newTitle}\n\nЧтобы выключить, нажми /off`);
 });
 
 // ============================================
@@ -561,6 +634,19 @@ bot.on("message", async (ctx) => {
             await ctx.reply(`${plural ? 'Города' : 'Город'} ${toRemove.join(', ')} ${plural ? 'удалены' : 'удалён'}.`);
             return;
         }
+
+        if (pending.step === 'ask_calendar_title') {
+            const newTitle = text.trim();
+            if (newTitle.length === 0) {
+                await ctx.reply("Укажи название встречи.");
+                return;
+            }
+            
+            await saveCalendarSettings(chatId, { enabled: true, title: newTitle });
+            await deletePending(chatId, userId);
+            await ctx.reply(`Календарная ссылка включена.\nНазвание встречи: ${newTitle}\n\nЧтобы выключить, нажми /off`);
+            return;
+        }
     }
 
     // Time conversion
@@ -593,14 +679,18 @@ bot.on("message", async (ctx) => {
     resultLines.sort((a, b) => a.sort - b.sort);
     let replyText = resultLines.map(line => line.text).join('\n');
 
-    const startDateObj = new Date(absoluteTargetTime);
-    const endDateObj = new Date(absoluteTargetTime + 60 * 60 * 1000);
-    const startStr = formatGoogleDate(startDateObj);
-    const endStr = formatGoogleDate(endDateObj);
-    const eventTitle = encodeURIComponent("qw meet");
-    const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${eventTitle}&dates=${startStr}/${endStr}`;
+    const calendarSettings = await getCalendarSettings(chatId);
+    
+    if (calendarSettings.enabled) {
+        const startDateObj = new Date(absoluteTargetTime);
+        const endDateObj = new Date(absoluteTargetTime + 60 * 60 * 1000);
+        const startStr = formatGoogleDate(startDateObj);
+        const endStr = formatGoogleDate(endDateObj);
+        const eventTitle = encodeURIComponent(calendarSettings.title);
+        const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${eventTitle}&dates=${startStr}/${endStr}`;
 
-    replyText += `\n\n<a href="${googleUrl}">⨁ в календарь</a>`;
+        replyText += `\n\n<a href="${googleUrl}">⨁ в календарь</a>`;
+    }
 
     try {
         await ctx.reply(replyText, {
