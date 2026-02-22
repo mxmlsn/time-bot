@@ -26,8 +26,8 @@ const DEFAULT_CITIES = [
     { name: 'Нью-Йорк', zone: 'America/New_York', codes: ['н', 'ny', 'ню'], sort: 4 }
 ];
 
-// Welcome animation URL
-const WELCOME_ANIMATION = "https://raw.githubusercontent.com/mxmlsn/time-bot/main/welcome.mp4?v=3";
+// Welcome animation URL  
+const WELCOME_ANIMATION = "https://raw.githubusercontent.com/mxmlsn/time-bot/main/welcome.mp4?t=1740184000";
 
 // ============================================
 // HELPER FUNCTIONS
