@@ -27,7 +27,7 @@ const DEFAULT_CITIES = [
 ];
 
 // Welcome animation URL
-const WELCOME_ANIMATION = "https://raw.githubusercontent.com/mxmlsn/time-bot/main/welcome.mp4?v=2";
+const WELCOME_ANIMATION = "https://raw.githubusercontent.com/mxmlsn/time-bot/main/welcome.mp4?v=3";
 
 // ============================================
 // HELPER FUNCTIONS
