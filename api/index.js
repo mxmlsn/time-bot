@@ -120,6 +120,30 @@ async function saveCalendarSettings(chatId, settings) {
     }
 }
 
+async function getClipboard(userId) {
+    if (!redis) return null;
+    try {
+        await redis.connect().catch(() => {});
+        const data = await redis.get(`user:${userId}:clipboard`);
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
+        console.error('Redis get clipboard error:', e.message);
+        return null;
+    }
+}
+
+async function setClipboard(userId, data, ttlSeconds = 86400) {
+    if (!redis) return false;
+    try {
+        await redis.connect().catch(() => {});
+        await redis.setex(`user:${userId}:clipboard`, ttlSeconds, JSON.stringify(data));
+        return true;
+    } catch (e) {
+        console.error('Redis set clipboard error:', e.message);
+        return false;
+    }
+}
+
 async function searchCityTimezone(cityName) {
     try {
         const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName)}&format=json&limit=5`;
@@ -201,6 +225,10 @@ bot.command("start", async (ctx) => {
         `Сейчас уже добавлены ${cityNames}.`,
         "Жми на /removecity, если хочешь что-то удалить.",
         "",
+        "Настрой города в личке и перенеси в чат:",
+        "/copy — скопировать настройки",
+        "/paste — вставить в другой чат",
+        "",
         "Актуальный список /list",
         "Настрой календарь /calendar",
         "За инструкцией /help",
@@ -227,6 +255,10 @@ bot.command("help", async (ctx) => {
         "",
         `Сейчас уже добавлены ${cityNames}.`,
         "Жми на /removecity, если хочешь что-то удалить.",
+        "",
+        "Настрой города в личке и перенеси в чат:",
+        "/copy — скопировать настройки",
+        "/paste — вставить в другой чат",
         "",
         "Актуальный список /list",
         "Настрой календарь /calendar",
@@ -488,6 +520,64 @@ bot.command("exit", async (ctx) => {
         await deletePending(chatId, userId);
         // No reply - silent exit
     }
+});
+
+bot.command("copy", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const userId = ctx.from.id;
+    
+    const cities = await getChatCities(chatId);
+    const calendar = await getCalendarSettings(chatId);
+    
+    if (!cities || cities.length === 0) {
+        await ctx.reply("В этом чате нет настроенных городов.");
+        return;
+    }
+    
+    await setClipboard(userId, {
+        cities: cities,
+        calendar: calendar,
+        timestamp: Date.now()
+    });
+    
+    let lines = ["Настройки скопированы.", ""];
+    for (const city of cities) {
+        lines.push(`${city.name} — ${city.codes.join(' ')}`);
+    }
+    lines.push("");
+    lines.push("Можешь перенести их в другой чат через /paste");
+    
+    await ctx.reply(lines.join("\n"));
+});
+
+bot.command("paste", async (ctx) => {
+    const chatId = ctx.chat.id;
+    const userId = ctx.from.id;
+    
+    const clipboard = await getClipboard(userId);
+    
+    if (!clipboard) {
+        await ctx.reply("Сначала сделай /copy в чате откуда хочешь перенести настройки.");
+        return;
+    }
+    
+    // Check TTL (24 hours = 86400000 ms)
+    const age = Date.now() - clipboard.timestamp;
+    if (age > 86400000) {
+        await ctx.reply("Скопированные настройки устарели.\nСделай /copy заново в чате-источнике.");
+        return;
+    }
+    
+    // Save cities and calendar to current chat
+    await saveChatCities(chatId, clipboard.cities);
+    await saveCalendarSettings(chatId, clipboard.calendar);
+    
+    let lines = ["Города перенесены.", ""];
+    for (const city of clipboard.cities) {
+        lines.push(`${city.name} — ${city.codes.join(' ')}`);
+    }
+    
+    await ctx.reply(lines.join("\n"));
 });
 
 // ============================================
