@@ -36,7 +36,6 @@ const WELCOME_ANIMATION = "https://raw.githubusercontent.com/mxmlsn/time-bot/mai
 async function getChatCities(chatId) {
     if (!redis) return DEFAULT_CITIES;
     try {
-        await redis.connect().catch(() => {});
         const stored = await redis.get(`chat:${chatId}:cities`);
         if (stored) {
             const parsed = JSON.parse(stored);
@@ -51,7 +50,6 @@ async function getChatCities(chatId) {
 async function saveChatCities(chatId, cities) {
     if (!redis) return false;
     try {
-        await redis.connect().catch(() => {});
         await redis.set(`chat:${chatId}:cities`, JSON.stringify(cities));
         return true;
     } catch (e) {
@@ -63,7 +61,6 @@ async function saveChatCities(chatId, cities) {
 async function getPending(chatId, userId) {
     if (!redis) return null;
     try {
-        await redis.connect().catch(() => {});
         const data = await redis.get(`pending:${chatId}:${userId}`);
         return data ? JSON.parse(data) : null;
     } catch (e) {
@@ -75,7 +72,6 @@ async function getPending(chatId, userId) {
 async function setPending(chatId, userId, data, ttlSeconds = 300) {
     if (!redis) return false;
     try {
-        await redis.connect().catch(() => {});
         await redis.setex(`pending:${chatId}:${userId}`, ttlSeconds, JSON.stringify(data));
         return true;
     } catch (e) {
@@ -87,7 +83,6 @@ async function setPending(chatId, userId, data, ttlSeconds = 300) {
 async function deletePending(chatId, userId) {
     if (!redis) return false;
     try {
-        await redis.connect().catch(() => {});
         await redis.del(`pending:${chatId}:${userId}`);
         return true;
     } catch (e) {
@@ -99,7 +94,6 @@ async function deletePending(chatId, userId) {
 async function getCalendarSettings(chatId) {
     if (!redis) return { enabled: true, title: "QW meet" };
     try {
-        await redis.connect().catch(() => {});
         const data = await redis.get(`chat:${chatId}:calendar`);
         return data ? JSON.parse(data) : { enabled: true, title: "QW meet" };
     } catch (e) {
@@ -111,7 +105,6 @@ async function getCalendarSettings(chatId) {
 async function saveCalendarSettings(chatId, settings) {
     if (!redis) return false;
     try {
-        await redis.connect().catch(() => {});
         await redis.set(`chat:${chatId}:calendar`, JSON.stringify(settings));
         return true;
     } catch (e) {
@@ -123,7 +116,6 @@ async function saveCalendarSettings(chatId, settings) {
 async function getClipboard(userId) {
     if (!redis) return null;
     try {
-        await redis.connect().catch(() => {});
         const data = await redis.get(`user:${userId}:clipboard`);
         return data ? JSON.parse(data) : null;
     } catch (e) {
@@ -135,7 +127,6 @@ async function getClipboard(userId) {
 async function setClipboard(userId, data, ttlSeconds = 86400) {
     if (!redis) return false;
     try {
-        await redis.connect().catch(() => {});
         await redis.setex(`user:${userId}:clipboard`, ttlSeconds, JSON.stringify(data));
         return true;
     } catch (e) {
