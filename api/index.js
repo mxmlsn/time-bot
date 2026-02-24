@@ -525,11 +525,16 @@ bot.command("copy", async (ctx) => {
         return;
     }
     
-    await setClipboard(userId, {
+    const saved = await setClipboard(userId, {
         cities: cities,
         calendar: calendar,
         timestamp: Date.now()
     });
+    
+    if (!saved) {
+        await ctx.reply("Ошибка сохранения настроек. Попробуй позже.");
+        return;
+    }
     
     let lines = ["Настройки скопированы.", ""];
     for (const city of cities) {
@@ -560,8 +565,13 @@ bot.command("paste", async (ctx) => {
     }
     
     // Save cities and calendar to current chat
-    await saveChatCities(chatId, clipboard.cities);
-    await saveCalendarSettings(chatId, clipboard.calendar);
+    const citiesSaved = await saveChatCities(chatId, clipboard.cities);
+    const calendarSaved = await saveCalendarSettings(chatId, clipboard.calendar);
+    
+    if (!citiesSaved || !calendarSaved) {
+        await ctx.reply("Ошибка сохранения настроек. Попробуй позже.");
+        return;
+    }
     
     let lines = ["Города перенесены.", ""];
     for (const city of clipboard.cities) {
